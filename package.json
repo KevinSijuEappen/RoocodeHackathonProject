@@ -7,9 +7,11 @@
     "build": "next build --turbopack",
     "start": "next start",
     "lint": "eslint",
-    "init-db": "node scripts/init-db.js"
+    "init-db": "node scripts/init-db.js",
+    "update-user-profiles": "node scripts/update-user-profiles.js"
   },
   "dependencies": {
+    "@clerk/nextjs": "^6.31.6",
     "@google/generative-ai": "^0.21.0",
     "dotenv": "^17.2.1",
     "framer-motion": "^11.18.2",

@@ -319,7 +319,10 @@ export default function DocumentDashboard({ userProfile, onDocumentSelect }: Doc
           </div>
 
           {/* Forecast Scenarios */}
-          <ForecastScenarios documentId={selectedDocument.id} />
+          <ForecastScenarios 
+            documentId={selectedDocument.id} 
+            userProfile={userProfile}
+          />
         </div>
       )}
     </div>

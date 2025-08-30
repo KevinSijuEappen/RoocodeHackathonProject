@@ -120,14 +120,46 @@ export default function PersonalizationSetup({ onComplete }: PersonalizationSetu
     );
   };
 
-  const handleComplete = () => {
+  const handleComplete = async () => {
     if (location && selectedInterests.length > 0) {
-      onComplete({
-        zipCode: location.zipCode,
-        city: location.city,
-        state: location.state,
-        interests: selectedInterests
-      });
+      try {
+        // Save profile to database
+        const response = await fetch('/api/user-profile', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            zipCode: location.zipCode,
+            city: location.city,
+            state: location.state,
+            interests: selectedInterests
+          }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          onComplete(data.profile);
+        } else {
+          console.error('Failed to save profile');
+          // Still proceed with local profile
+          onComplete({
+            zipCode: location.zipCode,
+            city: location.city,
+            state: location.state,
+            interests: selectedInterests
+          });
+        }
+      } catch (error) {
+        console.error('Error saving profile:', error);
+        // Still proceed with local profile
+        onComplete({
+          zipCode: location.zipCode,
+          city: location.city,
+          state: location.state,
+          interests: selectedInterests
+        });
+      }
     }
   };
 
