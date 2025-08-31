@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
-import { writeFile, mkdir } from "fs/promises";
-import { join } from "path";
-import { existsSync } from "fs";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { query } from "@/lib/db";
+import { PDFProcessor } from "@/lib/pdf-processor";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
@@ -19,53 +17,101 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const formData = await request.formData();
-    const file = formData.get('file') as File;
-    const zipCode = formData.get('zipCode') as string;
-    const interests = JSON.parse(formData.get('interests') as string);
+    let formData, file, zipCode, interests;
+    try {
+      formData = await request.formData();
+      file = formData.get('file') as File;
+      zipCode = formData.get('zipCode') as string;
+      interests = JSON.parse(formData.get('interests') as string);
+    } catch (err) {
+      console.error('Form data parsing error:', err);
+      return NextResponse.json({ error: 'Invalid form data' }, { status: 400 });
+    }
 
     if (!file) {
+      console.error('No file uploaded');
       return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
     }
 
-    // Create uploads directory if it doesn't exist
-    const uploadsDir = join(process.cwd(), 'uploads');
-    if (!existsSync(uploadsDir)) {
-      await mkdir(uploadsDir, { recursive: true });
+    // Convert file to buffer
+    let buffer: Buffer;
+    try {
+      const bytes = await file.arrayBuffer();
+      buffer = Buffer.from(bytes);
+      
+      console.log('File info:', {
+        name: file.name,
+        type: file.type,
+        size: file.size,
+        bufferLength: buffer.length
+      });
+      
+      // Check for suspicious file path content
+      if (PDFProcessor.detectFilePath(buffer)) {
+        console.error('Buffer appears to contain file path instead of file content');
+        return NextResponse.json({ 
+          error: 'Invalid file upload: received file path instead of file content' 
+        }, { status: 400 });
+      }
+      
+    } catch (err) {
+      console.error('File buffer error:', err);
+      return NextResponse.json({ error: 'Failed to read file buffer' }, { status: 500 });
     }
-
-    // Save file
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-    const filename = `${Date.now()}-${file.name}`;
-    const filepath = join(uploadsDir, filename);
-    await writeFile(filepath, buffer);
 
     // Extract text content
     let content = '';
-    if (file.type === 'application/pdf') {
-      const pdfParse = (await import('pdf-parse')).default;
-      const pdfData = await pdfParse(buffer);
-      content = pdfData.text;
-    } else {
-      content = buffer.toString('utf-8');
+    try {
+      if (file.type === 'application/pdf') {
+        console.log('Processing PDF with buffer length:', buffer.length);
+        
+        const result = await PDFProcessor.extractText(buffer);
+        
+        if (!result.success) {
+          console.error('PDF processing failed:', result.error);
+          return NextResponse.json({ 
+            error: `PDF processing failed: ${result.error}` 
+          }, { status: 400 });
+        }
+        
+        content = result.text || '';
+        console.log(`PDF processed successfully: ${result.pageCount} pages, ${content.length} characters`);
+        
+        if (!content.trim()) {
+          return NextResponse.json({ 
+            error: 'PDF file appears to be empty or contains no extractable text' 
+          }, { status: 400 });
+        }
+        
+      } else {
+        // Handle text files
+        content = buffer.toString('utf-8');
+      }
+    } catch (err) {
+      console.error('File parsing error:', err);
+      return NextResponse.json({ error: 'Failed to parse file content' }, { status: 500 });
     }
 
     // Save document to database
-    const documentResult = await query(
-      `INSERT INTO documents (title, content, document_type, zip_code, file_path, processed) 
-       VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
-      [
-        file.name.replace(/\.[^/.]+$/, ""), // Remove file extension
-        content,
-        'uploaded',
-        zipCode,
-        filepath,
-        false
-      ]
-    );
-    
-    const documentId = documentResult.rows[0].id;
+    let documentId;
+    try {
+      const documentResult = await query(
+        `INSERT INTO documents (title, content, document_type, zip_code, file_path, processed) 
+         VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
+        [
+          file.name.replace(/\.[^/.]+$/, ""), // Remove file extension
+          content,
+          'uploaded',
+          zipCode,
+          file.name, // or use null if file_path is not needed
+          false
+        ]
+      );
+      documentId = documentResult.rows[0].id;
+    } catch (err) {
+      console.error('Database insert error:', err);
+      return NextResponse.json({ error: 'Failed to save document to database' }, { status: 500 });
+    }
 
     // Process document asynchronously
     processDocument(documentId, content, interests, zipCode);
@@ -112,15 +158,58 @@ Format your response as JSON with this structure:
   ]
 }`;
 
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
     const result = await model.generateContent(prompt);
     const response = await result.response;
     const analysisText = response.text();
 
-    const analysisResult = JSON.parse(analysisText || '{"insights": []}');
+    console.log('Raw Gemini response:', analysisText);
+
+    // Clean the response text to extract JSON
+    let cleanedText = analysisText || '{"insights": []}';
+    
+    // Remove markdown code blocks if present
+    cleanedText = cleanedText.replace(/```json\s*/g, '').replace(/```\s*/g, '');
+    
+    // Remove any leading/trailing whitespace
+    cleanedText = cleanedText.trim();
+    
+    // If the response doesn't start with {, try to find JSON within the text
+    if (!cleanedText.startsWith('{')) {
+      const jsonMatch = cleanedText.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        cleanedText = jsonMatch[0];
+      } else {
+        cleanedText = '{"insights": []}';
+      }
+    }
+
+    console.log('Cleaned text for parsing:', cleanedText);
+
+    let analysisResult;
+    try {
+      analysisResult = JSON.parse(cleanedText);
+    } catch (parseError) {
+      console.error('JSON parse error:', parseError);
+      console.error('Failed to parse text:', cleanedText);
+      
+      // Fallback: create a basic structure
+      analysisResult = {
+        insights: [{
+          category: "general",
+          summary: "Document processed but AI analysis failed to generate proper JSON format",
+          impact_level: 3,
+          key_points: ["Document uploaded successfully"],
+          action_items: ["Review document manually for insights"]
+        }]
+      };
+    }
 
     // Store insights in database
     for (const insight of analysisResult.insights) {
+      // Ensure impact_level is within valid range (1-5)
+      const validImpactLevel = Math.max(1, Math.min(5, insight.impact_level || 3));
+      
       await query(
         `INSERT INTO document_insights (document_id, category, summary, impact_level, key_points, action_items) 
          VALUES ($1, $2, $3, $4, $5, $6)`,
@@ -128,7 +217,7 @@ Format your response as JSON with this structure:
           documentId,
           insight.category,
           insight.summary,
-          insight.impact_level,
+          validImpactLevel,
           insight.key_points,
           insight.action_items
         ]
@@ -154,6 +243,7 @@ Format your response as JSON with this structure:
 
 async function generateForecasts(documentId: string, content: string, insights: any[]) {
   try {
+    // Generate forecasts using OpenAI
     const prompt = `Based on this government document analysis, generate realistic forecasts for potential impacts:
 
 Document insights: ${JSON.stringify(insights)}
@@ -182,10 +272,53 @@ Format as JSON:
     const response = await result.response;
     const forecastText = response.text();
 
-    const forecastResult = JSON.parse(forecastText || '{"forecasts": []}');
+    console.log('Raw Gemini response:', forecastText);
+
+    // Clean the response text to extract JSON
+    let cleanedText = forecastText || '{"forecasts": []}';
+    
+    // Remove markdown code blocks if present
+    cleanedText = cleanedText.replace(/```json\s*/g, '').replace(/```\s*/g, '');
+    
+    // Remove any leading/trailing whitespace
+    cleanedText = cleanedText.trim();
+    
+    // If the response doesn't start with {, try to find JSON within the text
+    if (!cleanedText.startsWith('{')) {
+      const jsonMatch = cleanedText.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        cleanedText = jsonMatch[0];
+      } else {
+        cleanedText = '{"forecasts": []}';
+      }
+    }
+
+    console.log('Cleaned text for parsing:', cleanedText);
+
+    let forecastResult;
+    try {
+      forecastResult = JSON.parse(cleanedText);
+    } catch (parseError) {
+      console.error('JSON parse error:', parseError);
+      console.error('Failed to parse text:', cleanedText);
+      
+      // Fallback: create a basic structure
+      forecastResult = {
+        forecasts: [{
+          category: "general",
+          prediction: "Document processed but AI analysis failed to generate proper JSON format",
+          confidence_score: 0.5,
+          timeframe: "6 months",
+          impact_areas: ["general impact"]
+        }]
+      };
+    }
 
     // Store forecasts in database
     for (const forecast of forecastResult.forecasts) {
+      // Ensure confidence_score is within valid range (0.0-1.0)
+      const validConfidenceScore = Math.max(0.0, Math.min(1.0, forecast.confidence_score || 0.5));
+      
       await query(
         `INSERT INTO forecasts (document_id, category, prediction, confidence_score, timeframe, impact_areas) 
          VALUES ($1, $2, $3, $4, $5, $6)`,
@@ -193,7 +326,7 @@ Format as JSON:
           documentId,
           forecast.category,
           forecast.prediction,
-          forecast.confidence_score,
+          validConfidenceScore,
           forecast.timeframe,
           forecast.impact_areas
         ]
