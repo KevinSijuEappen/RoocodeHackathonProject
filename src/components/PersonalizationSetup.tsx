@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { MapPin, CheckCircle, Loader2, AlertCircle, Sparkles, Target, ArrowRight } from "lucide-react";
+import { MapPin, CheckCircle, Loader2, AlertCircle, AreaChart, Target, ArrowRight } from "lucide-react";
 
 interface UserProfile {
   zipCode: string;
@@ -31,13 +31,16 @@ export default function PersonalizationSetup({ onComplete }: PersonalizationSetu
   const [location, setLocation] = useState<{zipCode: string, city: string, state: string} | null>(null);
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
   const [step, setStep] = useState(1);
-  const [isDetectingLocation, setIsDetectingLocation] = useState(false);
+  const [isDetectingLocation, setIsDetectingLocation] = useState(true);
   const [locationError, setLocationError] = useState('');
+  const [manualZip, setManualZip] = useState('');
+  const [isManualEntry, setIsManualEntry] = useState(false);
 
   useEffect(() => {
-    // Automatically detect location when component mounts
-    detectLocation();
-  }, []);
+    if (!isManualEntry) {
+      detectLocation();
+    }
+  }, [isManualEntry]);
 
   const detectLocation = async () => {
     setIsDetectingLocation(true);
@@ -85,6 +88,34 @@ export default function PersonalizationSetup({ onComplete }: PersonalizationSetu
     } catch (error) {
       console.error('Location detection failed:', error);
       setLocationError('Unable to detect location automatically. Please ensure location access is enabled.');
+    } finally {
+      setIsDetectingLocation(false);
+    }
+  };
+
+  const handleManualZipSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!manualZip.match(/^\d{5}$/)) {
+      setLocationError('Please enter a valid 5-digit zip code.');
+      return;
+    }
+    setIsDetectingLocation(true);
+    setLocationError('');
+    try {
+      const response = await fetch(`/api/location?zip=${manualZip}`);
+      const data = await response.json();
+      if (data.success) {
+        setLocation({
+          zipCode: data.location.zipCode,
+          city: data.location.city,
+          state: data.location.state,
+        });
+        fetchGovernmentData(data.location);
+      } else {
+        throw new Error(data.error || 'Invalid zip code');
+      }
+    } catch (error: any) {
+      setLocationError(error.message);
     } finally {
       setIsDetectingLocation(false);
     }
@@ -169,10 +200,10 @@ export default function PersonalizationSetup({ onComplete }: PersonalizationSetu
         {/* Header */}
         <div className="text-center mb-12">
           <div className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6" style={{backgroundColor: 'var(--primary)'}}>
-            <Sparkles className="w-10 h-10" style={{color: 'var(--primary-foreground)'}} />
+            <AreaChart className="w-10 h-10" style={{color: 'var(--primary-foreground)'}} />
           </div>
           <h1 className="text-4xl font-bold mb-4" style={{color: 'var(--foreground)'}}>
-            Welcome to Community Transparency Digest
+            Welcome to Area Infograph
           </h1>
           <p className="text-xl max-w-2xl mx-auto" style={{color: 'var(--muted-foreground)'}}>
             Let's personalize your civic engagement experience with AI-powered insights
@@ -202,13 +233,15 @@ export default function PersonalizationSetup({ onComplete }: PersonalizationSetu
           {step === 1 && (
             <div className="text-center">
               <h2 className="text-3xl font-bold mb-4">
-                Detecting your location...
+                {isManualEntry ? 'Enter Your Zip Code' : 'Detecting your location...'}
               </h2>
               <p className="text-lg mb-12 max-w-2xl mx-auto" style={{color: 'var(--muted-foreground)'}}>
-                We're automatically detecting your location to find relevant local government documents and provide context specific to your area.
+                {isManualEntry
+                  ? 'Enter your 5-digit zip code to find relevant local information.'
+                  : "We're automatically detecting your location to find relevant local government documents and provide context specific to your area."}
               </p>
-              
-              {isDetectingLocation && (
+
+              {!isManualEntry && isDetectingLocation && (
                 <div className="flex flex-col items-center justify-center py-12">
                   <div className="relative">
                     <div className="w-16 h-16 rounded-full flex items-center justify-center mb-4" style={{backgroundColor: 'var(--primary)'}}>
@@ -221,6 +254,21 @@ export default function PersonalizationSetup({ onComplete }: PersonalizationSetu
                 </div>
               )}
 
+              {isManualEntry && !location && (
+                <form onSubmit={handleManualZipSubmit} className="max-w-sm mx-auto mb-8">
+                  <input
+                    type="text"
+                    value={manualZip}
+                    onChange={(e) => setManualZip(e.target.value)}
+                    placeholder="e.g., 90210"
+                    className="w-full px-4 py-3 text-lg text-center rounded-lg border"
+                  />
+                  <button type="submit" className="w-full mt-4 px-8 py-3 rounded-lg font-semibold bg-blue-600 text-white">
+                    Find Location
+                  </button>
+                </form>
+              )}
+
               {locationError && (
                 <div className="max-w-md mx-auto p-6 border rounded-2xl shadow-lg" style={{backgroundColor: 'var(--destructive)', borderColor: 'var(--destructive-foreground)'}}>
                   <div className="flex items-center justify-center mb-4">
@@ -228,10 +276,10 @@ export default function PersonalizationSetup({ onComplete }: PersonalizationSetu
                       <AlertCircle className="w-6 h-6" style={{color: 'var(--destructive)'}} />
                     </div>
                   </div>
-                  <h3 className="font-bold text-lg mb-2" style={{color: 'var(--destructive-foreground)'}}>Location Detection Failed</h3>
+                  <h3 className="font-bold text-lg mb-2" style={{color: 'var(--destructive-foreground)'}}>Location Error</h3>
                   <p className="text-sm mb-4" style={{color: 'var(--destructive-foreground)'}}>{locationError}</p>
                   <button
-                    onClick={detectLocation}
+                    onClick={() => (isManualEntry ? setLocationError('') : detectLocation())}
                     className="w-full px-4 py-2 rounded-lg transition-colors font-medium"
                     style={{backgroundColor: 'var(--destructive-foreground)', color: 'var(--destructive)'}}
                   >
@@ -263,6 +311,14 @@ export default function PersonalizationSetup({ onComplete }: PersonalizationSetu
                   Continue to Interests
                   <ArrowRight className="w-5 h-5" />
                 </button>
+              )}
+
+              {!location && (
+                <div className="mt-8 text-center">
+                  <button onClick={() => setIsManualEntry(!isManualEntry)} className="text-sm text-gray-400 hover:text-white">
+                    {isManualEntry ? 'Detect Location Automatically' : 'Or Enter Zip Code Manually'}
+                  </button>
+                </div>
               )}
             </div>
           )}

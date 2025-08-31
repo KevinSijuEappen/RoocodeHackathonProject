@@ -1,51 +1,41 @@
-import { NextRequest, NextResponse } from "next/server";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { NextResponse } from 'next/server';
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
+// A simple in-memory cache for zip code lookups
+const zipCodeCache = new Map<string, { city: string; state: string }>();
 
-export async function POST(request: NextRequest) {
-  try {
-    const { latitude, longitude } = await request.json();
+// A mock database of zip codes to cities and states
+const zipCodeDatabase: { [key: string]: { city: string; state: string } } = {
+  '90210': { city: 'Beverly Hills', state: 'CA' },
+  '10001': { city: 'New York', state: 'NY' },
+  '60601': { city: 'Chicago', state: 'IL' },
+  '77001': { city: 'Houston', state: 'TX' },
+  '80202': { city: 'Denver', state: 'CO' },
+};
 
-    if (!latitude || !longitude) {
-      return NextResponse.json(
-        { error: "Latitude and longitude are required" },
-        { status: 400 }
-      );
-    }
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const zip = searchParams.get('zip');
 
-    // Use reverse geocoding to get location details
-    const geocodeResponse = await fetch(
-      `https://api.opencagedata.com/geocode/v1/json?q=${latitude}+${longitude}&key=${process.env.OPENCAGE_API_KEY}`
-    );
-    
-    const geocodeData = await geocodeResponse.json();
-    
-    if (!geocodeData.results || geocodeData.results.length === 0) {
-      return NextResponse.json(
-        { error: "Unable to determine location" },
-        { status: 400 }
-      );
-    }
+  if (!zip || !/^\d{5}$/.test(zip)) {
+    return NextResponse.json({ success: false, error: 'A valid 5-digit zip code is required.' }, { status: 400 });
+  }
 
-    const locationData = geocodeData.results[0];
-    const components = locationData.components;
-    
-    const locationInfo = {
-      city: components.city || components.town || components.village || "",
-      state: components.state || components.province || "",
-      country: components.country || "",
-      county: components.county || "",
-      formatted: locationData.formatted,
-      coordinates: { latitude, longitude }
-    };
+  if (zipCodeCache.has(zip)) {
+    return NextResponse.json({
+      success: true,
+      location: { zipCode: zip, ...zipCodeCache.get(zip) },
+    });
+  }
 
-    return NextResponse.json({ location: locationInfo });
-  } catch (error) {
-    console.error("Location detection error:", error);
-    return NextResponse.json(
-      { error: "Failed to detect location" },
-      { status: 500 }
-    );
+  const location = zipCodeDatabase[zip];
+
+  if (location) {
+    zipCodeCache.set(zip, location);
+    return NextResponse.json({
+      success: true,
+      location: { zipCode: zip, ...location },
+    });
+  } else {
+    return NextResponse.json({ success: false, error: 'Zip code not found.' }, { status: 404 });
   }
 }
