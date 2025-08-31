@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'Community Transparency Digest',
+  title: 'Area Infograph',
   description: 'AI-powered civic engagement platform for transparent government communication',
 }
 

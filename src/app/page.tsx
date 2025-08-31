@@ -58,7 +58,7 @@ export default function Home() {
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
         <div className="text-center text-white">
           <Sparkles className="w-12 h-12 mx-auto mb-4 animate-pulse" />
-          <p className="text-lg">Loading Your Community Digest...</p>
+          <p className="text-lg">Loading Your Area Infograph...</p>
         </div>
       </div>
     );
@@ -70,7 +70,7 @@ export default function Home() {
         <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center p-4">
           <div className="max-w-md w-full text-center">
             <Sparkles className="w-16 h-16 mx-auto mb-6 text-blue-400" />
-            <h1 className="text-5xl font-bold mb-4">Community Digest</h1>
+            <h1 className="text-5xl font-bold mb-4">Area Infograph</h1>
             <p className="text-xl text-gray-400 mb-8">Your AI-powered civic engagement hub.</p>
             <div className="bg-gray-800/50 p-8 rounded-2xl backdrop-blur-lg border border-gray-700 space-y-4">
               <SignInButton mode="modal">
@@ -106,7 +106,7 @@ export default function Home() {
             <div className="flex justify-between items-center py-4">
               <div className="flex items-center gap-4">
                 <Sparkles className="w-8 h-8 text-blue-400" />
-                <h1 className="text-2xl font-bold">Community Digest</h1>
+                <h1 className="text-2xl font-bold">Area Inforgraph</h1>
               </div>
               <div className="flex items-center gap-4">
                 <button onClick={() => setUserProfile(null)} className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors">
