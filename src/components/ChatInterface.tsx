@@ -138,18 +138,18 @@ export default function ChatInterface({ userProfile, selectedDocument }: ChatInt
   ];
 
   return (
-    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-200/50 dark:border-gray-700/50 h-[700px] flex flex-col overflow-hidden">
+    <div className="border rounded-2xl shadow-lg h-[700px] flex flex-col overflow-hidden" style={{backgroundColor: 'var(--card-background)', color: 'var(--foreground)', border: '1px solid var(--border)'}}>
       {/* Header */}
-      <div className="p-6 border-b border-gray-200/50 dark:border-gray-700/50 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20">
+      <div className="p-6 border-b" style={{borderColor: 'var(--border)'}}>
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
-            <Bot className="w-5 h-5 text-white" />
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{backgroundColor: 'var(--primary)'}}>
+            <Bot className="w-5 h-5" style={{color: 'var(--primary-foreground)'}} />
           </div>
           <div>
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white">
-              💬 AI Town Hall Chat
+            <h3 className="text-xl font-bold">
+              AI Town Hall Chat
             </h3>
-            <p className="text-sm text-gray-600 dark:text-gray-300">
+            <p className="text-sm" style={{color: 'var(--muted-foreground)'}}>
               Ask questions about government documents in plain English
             </p>
           </div>
@@ -157,14 +157,14 @@ export default function ChatInterface({ userProfile, selectedDocument }: ChatInt
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-gradient-to-b from-gray-50/50 to-white/50 dark:from-gray-900/50 dark:to-gray-800/50">
+      <div className="flex-1 overflow-y-auto p-6 space-y-6" style={{backgroundColor: 'var(--secondary)'}}>
         {messages.length === 0 && !selectedDocument && (
           <div className="text-center py-16">
-            <div className="w-16 h-16 bg-gradient-to-br from-gray-300 to-gray-400 dark:from-gray-600 dark:to-gray-700 rounded-2xl flex items-center justify-center mx-auto mb-6">
-              <Bot className="w-8 h-8 text-white" />
+            <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6" style={{backgroundColor: 'var(--muted)'}}>
+              <Bot className="w-8 h-8" style={{color: 'var(--muted-foreground)'}} />
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Ready to Chat!</h3>
-            <p className="text-gray-600 dark:text-gray-300">
+            <h3 className="text-lg font-semibold mb-2">Ready to Chat!</h3>
+            <p style={{color: 'var(--muted-foreground)'}}>
               Select a document from the dashboard to start asking questions
             </p>
           </div>
@@ -173,36 +173,35 @@ export default function ChatInterface({ userProfile, selectedDocument }: ChatInt
         {messages.map((message) => (
           <div key={message.id} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
             <div className={`flex gap-4 max-w-[85%] ${message.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg ${
-                message.role === 'user' 
-                  ? 'bg-gradient-to-br from-blue-600 to-indigo-600 text-white' 
-                  : 'bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-600 dark:to-gray-700 text-gray-700 dark:text-gray-200'
-              }`}>
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg`} style={{backgroundColor: message.role === 'user' ? 'var(--primary)' : 'var(--secondary)', color: message.role === 'user' ? 'var(--primary-foreground)' : 'var(--secondary-foreground)'}}>
                 {message.role === 'user' ? <User className="w-5 h-5" /> : <Bot className="w-5 h-5" />}
               </div>
               
-              <div className={`rounded-2xl p-4 shadow-lg backdrop-blur-sm ${
-                message.role === 'user'
-                  ? 'bg-gradient-to-br from-blue-600 to-indigo-600 text-white'
-                  : 'bg-white/90 dark:bg-gray-700/90 text-gray-900 dark:text-white border border-gray-200/50 dark:border-gray-600/50'
-              }`}>
+              <div className={`rounded-2xl p-4 shadow-lg`} style={{backgroundColor: message.role === 'user' ? 'var(--primary)' : 'var(--card-background)', color: message.role === 'user' ? 'var(--primary-foreground)' : 'var(--card-foreground)', border: message.role === 'user' ? 'none' : '1px solid var(--border)'}}>
                 <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
                 
                 {message.sources && message.sources.length > 0 && (
-                  <div className="mt-3 pt-3 border-t border-gray-300/50 dark:border-gray-600/50">
-                    <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">📄 Sources:</p>
+                  <div className="mt-3 pt-3 border-t" style={{borderColor: 'var(--border)'}}>
+                    <p className="text-xs font-medium mb-2" style={{color: 'var(--muted-foreground)'}}>Sources:</p>
                     <div className="space-y-1">
                       {message.sources.map((source, index) => (
-                        <div key={index} className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400 bg-gray-100/50 dark:bg-gray-600/50 rounded-lg px-2 py-1">
+                        <a
+                          key={index}
+                          href={source}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2 text-xs rounded-lg px-2 py-1 hover:underline"
+                          style={{color: 'var(--primary)'}}
+                        >
                           <FileText className="w-3 h-3" />
                           <span>{source}</span>
-                        </div>
+                        </a>
                       ))}
                     </div>
                   </div>
                 )}
                 
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-3 opacity-70">
+                <p className="text-xs mt-3 opacity-70" style={{color: 'var(--muted-foreground)'}}>
                   {message.timestamp.toLocaleTimeString()}
                 </p>
               </div>
@@ -213,17 +212,17 @@ export default function ChatInterface({ userProfile, selectedDocument }: ChatInt
         {isLoading && (
           <div className="flex justify-start">
             <div className="flex gap-4">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-600 dark:to-gray-700 flex items-center justify-center shadow-lg">
-                <Bot className="w-5 h-5 text-gray-700 dark:text-gray-200" />
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg" style={{backgroundColor: 'var(--secondary)'}}>
+                <Bot className="w-5 h-5" style={{color: 'var(--secondary-foreground)'}} />
               </div>
-              <div className="bg-white/90 dark:bg-gray-700/90 backdrop-blur-sm rounded-2xl p-4 shadow-lg border border-gray-200/50 dark:border-gray-600/50">
+              <div className="rounded-2xl p-4 shadow-lg border" style={{backgroundColor: 'var(--card-background)', borderColor: 'var(--border)'}}>
                 <div className="flex items-center gap-3">
                   <div className="flex space-x-1">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
-                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
-                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                    <div className="w-2 h-2 rounded-full animate-bounce" style={{backgroundColor: 'var(--primary)'}}></div>
+                    <div className="w-2 h-2 rounded-full animate-bounce" style={{animationDelay: '0.1s', backgroundColor: 'var(--primary)'}}></div>
+                    <div className="w-2 h-2 rounded-full animate-bounce" style={{animationDelay: '0.2s', backgroundColor: 'var(--primary)'}}></div>
                   </div>
-                  <span className="text-sm text-gray-600 dark:text-gray-300 font-medium">AI is thinking...</span>
+                  <span className="text-sm font-medium" style={{color: 'var(--muted-foreground)'}}>AI is thinking...</span>
                 </div>
               </div>
             </div>
@@ -235,8 +234,8 @@ export default function ChatInterface({ userProfile, selectedDocument }: ChatInt
 
       {/* Suggested Questions */}
       {messages.length <= 1 && selectedDocument && (
-        <div className="p-6 border-t border-gray-200/50 dark:border-gray-700/50 bg-gradient-to-r from-blue-50/50 to-indigo-50/50 dark:from-blue-900/10 dark:to-indigo-900/10">
-          <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+        <div className="p-6 border-t" style={{backgroundColor: 'var(--secondary)', borderColor: 'var(--border)'}}>
+          <p className="text-sm font-semibold mb-3 flex items-center gap-2">
             💡 Try asking:
           </p>
           <div className="flex flex-wrap gap-2">
@@ -244,7 +243,8 @@ export default function ChatInterface({ userProfile, selectedDocument }: ChatInt
               <button
                 key={index}
                 onClick={() => setInputMessage(question)}
-                className="text-xs px-4 py-2 bg-white/80 dark:bg-gray-700/80 text-gray-700 dark:text-gray-300 rounded-full hover:bg-white dark:hover:bg-gray-600 transition-all duration-200 border border-gray-200/50 dark:border-gray-600/50 shadow-sm hover:shadow-md transform hover:scale-105"
+                className="text-xs px-4 py-2 rounded-full hover:bg-secondary transition-all duration-200 border shadow-sm hover:shadow-md"
+                style={{backgroundColor: 'var(--card-background)', color: 'var(--card-foreground)', borderColor: 'var(--border)'}}
               >
                 {question}
               </button>
@@ -254,7 +254,7 @@ export default function ChatInterface({ userProfile, selectedDocument }: ChatInt
       )}
 
       {/* Input */}
-      <div className="p-6 border-t border-gray-200/50 dark:border-gray-700/50 bg-white/50 dark:bg-gray-800/50">
+      <div className="p-6 border-t" style={{backgroundColor: 'var(--card-background)', borderColor: 'var(--border)'}}>
         <div className="flex gap-3">
           <div className="flex-1 relative">
             <textarea
@@ -263,14 +263,16 @@ export default function ChatInterface({ userProfile, selectedDocument }: ChatInt
               onKeyPress={handleKeyPress}
               placeholder={selectedDocument ? "Ask a question about this document..." : "Select a document first"}
               disabled={!selectedDocument || isLoading}
-              className="w-full px-4 py-3 border border-gray-300/50 dark:border-gray-600/50 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white/90 dark:bg-gray-700/90 text-gray-900 dark:text-white resize-none backdrop-blur-sm shadow-sm transition-all duration-200"
+              className="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent resize-none shadow-sm transition-all duration-200"
+              style={{backgroundColor: 'var(--secondary)', color: 'var(--foreground)', borderColor: 'var(--border)'}}
               rows={2}
             />
           </div>
           <button
             onClick={sendMessage}
             disabled={!inputMessage.trim() || isLoading || !selectedDocument}
-            className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
+            className="px-6 py-3 rounded-xl hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-200"
+            style={{backgroundColor: 'var(--primary)', color: 'var(--primary-foreground)'}}
           >
             <Send className="w-5 h-5" />
           </button>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import { BarChart3, TrendingUp, TrendingDown } from "lucide-react";
 
 interface ComparativeData {
@@ -78,13 +78,13 @@ export default function ComparativeContext({ documentId, zipCode, categories }: 
   const insight = getComparisonInsight();
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-      <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+    <div className="rounded-lg shadow-sm border" style={{backgroundColor: 'var(--card-background)', color: 'var(--foreground)', borderColor: 'var(--border)'}}>
+      <div className="p-6 border-b" style={{borderColor: 'var(--border)'}}>
+        <h3 className="text-lg font-semibold flex items-center gap-2">
           <BarChart3 className="w-5 h-5" />
           Comparative Context
         </h3>
-        <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
+        <p className="text-sm mt-1" style={{color: 'var(--muted-foreground)'}}>
           How your area compares to nearby cities
         </p>
       </div>
@@ -92,8 +92,8 @@ export default function ComparativeContext({ documentId, zipCode, categories }: 
       <div className="p-6">
         {comparativeData.length === 0 ? (
           <div className="text-center py-8">
-            <BarChart3 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-600 dark:text-gray-300">
+            <BarChart3 className="w-12 h-12 mx-auto mb-4" style={{color: 'var(--muted-foreground)'}} />
+            <p style={{color: 'var(--muted-foreground)'}}>
               No comparative data available
             </p>
           </div>
@@ -101,13 +101,14 @@ export default function ComparativeContext({ documentId, zipCode, categories }: 
           <div className="space-y-6">
             {/* Metric Selector */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-medium mb-2">
                 Select Metric:
               </label>
               <select
                 value={selectedMetric}
                 onChange={(e) => setSelectedMetric(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                style={{backgroundColor: 'var(--secondary)', borderColor: 'var(--border)'}}
               >
                 {metrics.map((metric) => (
                   <option key={metric} value={metric}>
@@ -119,21 +120,21 @@ export default function ComparativeContext({ documentId, zipCode, categories }: 
 
             {/* Insight Card */}
             {insight && (
-              <div className={`p-4 rounded-lg ${
-                insight.isHigher 
-                  ? 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800'
-                  : 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800'
+              <div className={`p-4 rounded-lg border ${
+                insight.isHigher
+                  ? 'bg-destructive/10 border-destructive/20'
+                  : 'bg-green-500/10 border-green-500/20'
               }`}>
                 <div className="flex items-center gap-2">
                   {insight.isHigher ? (
-                    <TrendingUp className="w-5 h-5 text-red-600 dark:text-red-400" />
+                    <TrendingUp className="w-5 h-5 text-destructive" />
                   ) : (
-                    <TrendingDown className="w-5 h-5 text-green-600 dark:text-green-400" />
+                    <TrendingDown className="w-5 h-5 text-green-400" />
                   )}
                   <p className={`font-medium ${
-                    insight.isHigher 
-                      ? 'text-red-800 dark:text-red-200'
-                      : 'text-green-800 dark:text-green-200'
+                    insight.isHigher
+                      ? 'text-destructive'
+                      : 'text-green-400'
                   }`}>
                     {insight.text}
                   </p>
@@ -145,15 +146,22 @@ export default function ComparativeContext({ documentId, zipCode, categories }: 
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={currentMetricData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis 
-                    dataKey="city" 
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                  <XAxis
+                    dataKey="city"
                     angle={-45}
                     textAnchor="end"
                     height={80}
+                    stroke="var(--muted-foreground)"
                   />
-                  <YAxis />
-                  <Tooltip 
+                  <YAxis stroke="var(--muted-foreground)" />
+                  <Tooltip
+                    cursor={{ fill: 'var(--secondary)' }}
+                    contentStyle={{
+                      background: "var(--card-background)",
+                      borderColor: "var(--border)",
+                      color: "var(--foreground)"
+                    }}
                     formatter={(value: number) => [
                       selectedMetric.includes('$') || selectedMetric.includes('Price') || selectedMetric.includes('Spending')
                         ? `$${value.toLocaleString()}`
@@ -163,11 +171,14 @@ export default function ComparativeContext({ documentId, zipCode, categories }: 
                       selectedMetric
                     ]}
                   />
-                  <Bar 
-                    dataKey="metric_value" 
+                  <Bar
+                    dataKey="metric_value"
                     radius={[4, 4, 0, 0]}
-                    fill="#3B82F6"
-                  />
+                  >
+                    {currentMetricData.map((entry) => (
+                      <Cell key={entry.city} fill={entry.isUserCity ? 'var(--primary)' : 'var(--secondary-foreground)'} />
+                    ))}
+                  </Bar>
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -176,20 +187,18 @@ export default function ComparativeContext({ documentId, zipCode, categories }: 
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-gray-200 dark:border-gray-700">
-                    <th className="text-left py-2 font-medium text-gray-900 dark:text-white">City</th>
-                    <th className="text-right py-2 font-medium text-gray-900 dark:text-white">Value</th>
+                  <tr className="border-b" style={{borderColor: 'var(--border)'}}>
+                    <th className="text-left py-2 font-medium">City</th>
+                    <th className="text-right py-2 font-medium">Value</th>
                   </tr>
                 </thead>
                 <tbody>
                   {currentMetricData.map((item, index) => (
-                    <tr key={index} className={`border-b border-gray-100 dark:border-gray-800 ${
-                      item.isUserCity ? 'bg-blue-50 dark:bg-blue-900/20' : ''
-                    }`}>
-                      <td className="py-2 text-gray-900 dark:text-white">
+                    <tr key={index} className={`border-b`} style={{borderColor: 'var(--border)', backgroundColor: item.isUserCity ? 'var(--primary)' : 'transparent'}}>
+                      <td className="py-2">
                         {item.city} {item.isUserCity && '(Your City)'}
                       </td>
-                      <td className="py-2 text-right text-gray-600 dark:text-gray-300">
+                      <td className="py-2 text-right" style={{color: 'var(--muted-foreground)'}}>
                         {selectedMetric.includes('$') || selectedMetric.includes('Price') || selectedMetric.includes('Spending')
                           ? `$${item.metric_value.toLocaleString()}`
                           : selectedMetric.includes('%')

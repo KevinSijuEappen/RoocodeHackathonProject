@@ -21,6 +21,7 @@ interface UploadStatus {
 
 export default function DocumentUpload({ userProfile }: DocumentUploadProps) {
   const [uploadStatus, setUploadStatus] = useState<UploadStatus>({ status: 'idle' });
+  const [category, setCategory] = useState('');
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
@@ -113,95 +114,86 @@ export default function DocumentUpload({ userProfile }: DocumentUploadProps) {
   const getStatusColor = () => {
     switch (uploadStatus.status) {
       case 'success':
-        return 'border-green-300 bg-green-50 dark:bg-green-900/20';
+        return 'border-green-500/50 bg-green-500/10';
       case 'error':
-        return 'border-red-300 bg-red-50 dark:bg-red-900/20';
+        return 'border-destructive/50 bg-destructive/10';
       case 'uploading':
       case 'processing':
-        return 'border-blue-300 bg-blue-50 dark:bg-blue-900/20';
+        return 'border-primary/50 bg-primary/10';
       default:
-        return isDragActive 
-          ? 'border-blue-400 bg-blue-50 dark:bg-blue-900/20' 
-          : 'border-gray-300 dark:border-gray-600';
+        return isDragActive
+          ? 'border-primary bg-primary/10'
+          : 'border-border';
     }
   };
 
   return (
-    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-200/50 dark:border-gray-700/50 overflow-hidden">
-      <div className="p-8 border-b border-gray-200/50 dark:border-gray-700/50 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20">
+    <div className="border rounded-2xl shadow-lg" style={{backgroundColor: 'var(--card-background)', color: 'var(--foreground)', border: '1px solid var(--border)'}}>
+      <div className="p-6 border-b" style={{borderColor: 'var(--border)'}}>
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-pink-600 rounded-xl flex items-center justify-center shadow-lg">
-            <Upload className="w-5 h-5 text-white" />
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{backgroundColor: 'var(--primary)'}}>
+            <Upload className="w-5 h-5" style={{color: 'var(--primary-foreground)'}} />
           </div>
           <div>
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-              📤 Upload Government Document
+            <h2 className="text-xl font-bold">
+              Upload Government Document
             </h2>
-            <p className="text-gray-600 dark:text-gray-300">
+            <p style={{color: 'var(--muted-foreground)'}}>
               Get AI-powered insights tailored to your interests
             </p>
           </div>
         </div>
       </div>
       
-      <div className="p-8">
+      <div className="p-6">
+        <div className="mb-4">
+          <label htmlFor="category" className="block text-sm font-medium mb-2">Document Category</label>
+          <select
+            id="category"
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+            style={{backgroundColor: 'var(--secondary)', borderColor: 'var(--border)'}}
+          >
+            <option value="">Select a category</option>
+            <option value="Meeting Notes">Meeting Notes</option>
+            <option value="Policy Docs">Policy Docs</option>
+            <option value="Budget Reports">Budget Reports</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
         <div
           {...getRootProps()}
-          className={`border-2 border-dashed rounded-2xl p-12 text-center cursor-pointer transition-all duration-300 transform hover:scale-[1.02] ${getStatusColor()}`}
+          className={`border-2 border-dashed rounded-2xl p-12 text-center cursor-pointer transition-all duration-300 ${getStatusColor()}`}
         >
           <input {...getInputProps()} />
           
-          <div className="flex flex-col items-center space-y-6">
-            <div className={`w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-300 ${
-              uploadStatus.status === 'success' ? 'bg-green-100 dark:bg-green-900/50' :
-              uploadStatus.status === 'error' ? 'bg-red-100 dark:bg-red-900/50' :
-              uploadStatus.status === 'uploading' || uploadStatus.status === 'processing' ? 'bg-blue-100 dark:bg-blue-900/50' :
-              'bg-gray-100 dark:bg-gray-700'
-            }`}>
+          <div className="flex flex-col items-center space-y-4">
+            <div className={`w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-300`} style={{backgroundColor: 'var(--secondary)'}}>
               {getStatusIcon()}
             </div>
             
             {uploadStatus.status === 'idle' && (
               <>
-                <div className="space-y-2">
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                    {isDragActive ? '🎯 Drop your document here!' : '📄 Ready for Analysis'}
+                <div className="space-y-1">
+                  <p className="text-xl font-bold">
+                    {isDragActive ? 'Drop your document here!' : 'Ready for Analysis'}
                   </p>
-                  <p className="text-gray-600 dark:text-gray-300 text-lg">
+                  <p style={{color: 'var(--muted-foreground)'}}>
                     Drag & drop or click to select • PDF, DOC, DOCX, TXT
                   </p>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full max-w-md">
-                  <div className="flex flex-col items-center p-4 bg-white/50 dark:bg-gray-700/50 rounded-xl border border-gray-200/50 dark:border-gray-600/50">
-                    <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/50 rounded-lg flex items-center justify-center mb-2">
-                      <FileText className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                    </div>
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Meeting Notes</span>
-                  </div>
-                  <div className="flex flex-col items-center p-4 bg-white/50 dark:bg-gray-700/50 rounded-xl border border-gray-200/50 dark:border-gray-600/50">
-                    <div className="w-8 h-8 bg-green-100 dark:bg-green-900/50 rounded-lg flex items-center justify-center mb-2">
-                      <FileText className="w-4 h-4 text-green-600 dark:text-green-400" />
-                    </div>
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Policy Docs</span>
-                  </div>
-                  <div className="flex flex-col items-center p-4 bg-white/50 dark:bg-gray-700/50 rounded-xl border border-gray-200/50 dark:border-gray-600/50">
-                    <div className="w-8 h-8 bg-purple-100 dark:bg-purple-900/50 rounded-lg flex items-center justify-center mb-2">
-                      <FileText className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-                    </div>
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Budget Reports</span>
-                  </div>
                 </div>
               </>
             )}
             
             {uploadStatus.message && (
               <div className="text-center">
-                <p className="text-lg font-semibold text-gray-700 dark:text-gray-300">
+                <p className="text-lg font-semibold">
                   {uploadStatus.message}
                 </p>
                 {(uploadStatus.status === 'uploading' || uploadStatus.status === 'processing') && (
-                  <div className="mt-4 w-64 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                    <div className="bg-gradient-to-r from-blue-500 to-indigo-600 h-2 rounded-full animate-pulse" style={{width: uploadStatus.status === 'uploading' ? '30%' : '70%'}}></div>
+                  <div className="mt-4 w-64 rounded-full h-2" style={{backgroundColor: 'var(--muted)'}}>
+                    <div className="h-2 rounded-full animate-pulse" style={{width: uploadStatus.status === 'uploading' ? '30%' : '70%', backgroundColor: 'var(--primary)'}}></div>
                   </div>
                 )}
               </div>
@@ -210,15 +202,15 @@ export default function DocumentUpload({ userProfile }: DocumentUploadProps) {
         </div>
 
         {uploadStatus.status === 'success' && (
-          <div className="mt-6 p-6 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-2xl border border-green-200/50 dark:border-green-800/50">
+          <div className="mt-6 p-4 rounded-2xl border" style={{backgroundColor: 'var(--accent)', borderColor: 'var(--accent-foreground)'}}>
             <div className="flex items-start gap-4">
-              <div className="w-10 h-10 bg-green-100 dark:bg-green-900/50 rounded-xl flex items-center justify-center flex-shrink-0">
-                <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{backgroundColor: 'var(--accent-foreground)'}}>
+                <CheckCircle className="w-5 h-5" style={{color: 'var(--accent)'}} />
               </div>
               <div>
-                <h3 className="font-bold text-green-800 dark:text-green-200 mb-2">🎉 Analysis Complete!</h3>
-                <p className="text-green-700 dark:text-green-300">
-                  Your document has been processed and analyzed with AI! Switch to the Document Dashboard to see personalized insights based on your interests in <span className="font-semibold">{userProfile.zipCode}</span>.
+                <h3 className="font-bold mb-1" style={{color: 'var(--accent-foreground)'}}>Analysis Complete!</h3>
+                <p style={{color: 'var(--accent-foreground)'}}>
+                  Your document has been processed. Check the dashboard for insights.
                 </p>
               </div>
             </div>
@@ -226,14 +218,14 @@ export default function DocumentUpload({ userProfile }: DocumentUploadProps) {
         )}
 
         {uploadStatus.status === 'error' && (
-          <div className="mt-6 p-6 bg-gradient-to-br from-red-50 to-pink-50 dark:from-red-900/20 dark:to-pink-900/20 rounded-2xl border border-red-200/50 dark:border-red-800/50">
+          <div className="mt-6 p-4 rounded-2xl border" style={{backgroundColor: 'var(--destructive)', borderColor: 'var(--destructive-foreground)'}}>
             <div className="flex items-start gap-4">
-              <div className="w-10 h-10 bg-red-100 dark:bg-red-900/50 rounded-xl flex items-center justify-center flex-shrink-0">
-                <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{backgroundColor: 'var(--destructive-foreground)'}}>
+                <AlertCircle className="w-5 h-5" style={{color: 'var(--destructive)'}} />
               </div>
               <div>
-                <h3 className="font-bold text-red-800 dark:text-red-200 mb-2">Upload Failed</h3>
-                <p className="text-red-700 dark:text-red-300">
+                <h3 className="font-bold mb-1" style={{color: 'var(--destructive-foreground)'}}>Upload Failed</h3>
+                <p style={{color: 'var(--destructive-foreground)'}}>
                   {uploadStatus.message} Please check your file format and try again.
                 </p>
               </div>

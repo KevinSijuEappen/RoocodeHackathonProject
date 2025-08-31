@@ -22,9 +22,9 @@ interface SentimentHeatmapProps {
 }
 
 const COLORS = {
-  positive: '#10B981',
-  neutral: '#F59E0B',
-  negative: '#EF4444'
+  positive: 'hsl(var(--primary))',
+  neutral: 'hsl(var(--secondary-foreground))',
+  negative: 'hsl(var(--destructive))'
 };
 
 export default function SentimentHeatmap({ documentId }: SentimentHeatmapProps) {
@@ -51,10 +51,10 @@ export default function SentimentHeatmap({ documentId }: SentimentHeatmapProps) 
 
   if (loading) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+      <div className="bg-card rounded-lg shadow-sm border p-6">
         <div className="animate-pulse">
-          <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mb-4"></div>
-          <div className="h-32 bg-gray-200 dark:bg-gray-700 rounded"></div>
+          <div className="h-4 bg-muted rounded w-1/3 mb-4"></div>
+          <div className="h-32 bg-muted rounded"></div>
         </div>
       </div>
     );
@@ -67,13 +67,13 @@ export default function SentimentHeatmap({ documentId }: SentimentHeatmapProps) 
   }));
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-      <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+    <div className="rounded-lg shadow-sm border" style={{backgroundColor: 'var(--card-background)', color: 'var(--foreground)', borderColor: 'var(--border)'}}>
+      <div className="p-6 border-b" style={{borderColor: 'var(--border)'}}>
+        <h3 className="text-lg font-semibold flex items-center gap-2">
           <MessageSquare className="w-5 h-5" />
           Public Sentiment Analysis
         </h3>
-        <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
+        <p className="text-sm mt-1" style={{color: 'var(--muted-foreground)'}}>
           Based on {comments.length} public comments
         </p>
       </div>
@@ -81,8 +81,8 @@ export default function SentimentHeatmap({ documentId }: SentimentHeatmapProps) 
       <div className="p-6">
         {sentimentData.length === 0 ? (
           <div className="text-center py-8">
-            <MessageSquare className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-600 dark:text-gray-300">
+            <MessageSquare className="w-12 h-12 mx-auto mb-4" style={{color: 'var(--muted-foreground)'}} />
+            <p style={{color: 'var(--muted-foreground)'}}>
               No public comments available for sentiment analysis
             </p>
           </div>
@@ -97,16 +97,23 @@ export default function SentimentHeatmap({ documentId }: SentimentHeatmapProps) 
                     cx="50%"
                     cy="50%"
                     labelLine={false}
-                    label={({ name, percentage }) => `${name}: ${percentage}%`}
+                    label={({ name, percentage }) => `${name}: ${percentage.toFixed(0)}%`}
                     outerRadius={80}
-                    fill="#8884d8"
+                    fill="var(--primary)"
                     dataKey="value"
                   >
                     {pieData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[entry.name as keyof typeof COLORS]} />
+                      <Cell key={`cell-${index}`} fill={COLORS[entry.name as keyof typeof COLORS] || '#8884d8'} />
                     ))}
                   </Pie>
-                  <Tooltip />
+                  <Tooltip
+                    cursor={{ fill: 'var(--secondary)' }}
+                    contentStyle={{
+                      background: "var(--card-background)",
+                      borderColor: "var(--border)",
+                      color: "var(--foreground)"
+                    }}
+                  />
                 </PieChart>
               </ResponsiveContainer>
             </div>
@@ -115,17 +122,21 @@ export default function SentimentHeatmap({ documentId }: SentimentHeatmapProps) 
             <div className="h-48">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={sentimentData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="sentiment_label" />
-                  <YAxis />
-                  <Tooltip />
-                  <Bar 
-                    dataKey="count" 
-                    fill="#8884d8"
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                  <XAxis dataKey="sentiment_label" stroke="var(--muted-foreground)" />
+                  <YAxis stroke="var(--muted-foreground)" />
+                  <Tooltip
+                    contentStyle={{
+                      background: "var(--card-background)",
+                      borderColor: "var(--border)",
+                    }}
+                  />
+                  <Bar
+                    dataKey="count"
                     radius={[4, 4, 0, 0]}
                   >
                     {sentimentData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[entry.sentiment_label as keyof typeof COLORS]} />
+                      <Cell key={`cell-${index}`} fill={COLORS[entry.sentiment_label as keyof typeof COLORS] || '#8884d8'} />
                     ))}
                   </Bar>
                 </BarChart>
@@ -134,26 +145,26 @@ export default function SentimentHeatmap({ documentId }: SentimentHeatmapProps) 
 
             {/* Sample Comments */}
             <div>
-              <h4 className="font-medium text-gray-900 dark:text-white mb-3">Sample Comments:</h4>
+              <h4 className="font-medium mb-3">Sample Comments:</h4>
               <div className="space-y-3 max-h-48 overflow-y-auto">
                 {comments.slice(0, 3).map((comment, index) => (
-                  <div key={index} className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                  <div key={index} className="p-3 rounded-lg" style={{backgroundColor: 'var(--secondary)'}}>
                     <div className="flex items-center justify-between mb-2">
-                      <span className="font-medium text-sm text-gray-900 dark:text-white">
+                      <span className="font-medium text-sm">
                         {comment.commenter_name}
                       </span>
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        comment.sentiment_label === 'positive' 
-                          ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300'
+                        comment.sentiment_label === 'positive'
+                          ? 'bg-green-500/20 text-green-400'
                           : comment.sentiment_label === 'negative'
-                          ? 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300'
-                          : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300'
+                          ? 'bg-red-500/20 text-red-400'
+                          : 'bg-yellow-500/20 text-yellow-400'
                       }`}>
                         {comment.sentiment_label}
                       </span>
                     </div>
-                    <p className="text-sm text-gray-700 dark:text-gray-300">
-                      {comment.comment_text.length > 150 
+                    <p className="text-sm" style={{color: 'var(--muted-foreground)'}}>
+                      {comment.comment_text.length > 150
                         ? `${comment.comment_text.substring(0, 150)}...`
                         : comment.comment_text
                       }
