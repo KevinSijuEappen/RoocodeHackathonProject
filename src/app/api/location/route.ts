@@ -10,6 +10,9 @@ const zipCodeDatabase: { [key: string]: { city: string; state: string } } = {
   '60601': { city: 'Chicago', state: 'IL' },
   '77001': { city: 'Houston', state: 'TX' },
   '80202': { city: 'Denver', state: 'CO' },
+  '94102': { city: 'San Francisco', state: 'CA' },
+  '33109': { city: 'Miami Beach', state: 'FL' },
+  '98101': { city: 'Seattle', state: 'WA' },
 };
 
 export async function GET(request: Request) {
@@ -23,11 +26,11 @@ export async function GET(request: Request) {
   if (zipCodeCache.has(zip)) {
     return NextResponse.json({
       success: true,
-      location: { zipCode: zip, ...zipCodeCache.get(zip) },
+      location: { zipCode: zip, ...zipCodeCache.get(zip)! },
     });
   }
 
-  const location = zipCodeDatabase[zip];
+  let location = zipCodeDatabase[zip];
 
   if (location) {
     zipCodeCache.set(zip, location);
@@ -35,7 +38,27 @@ export async function GET(request: Request) {
       success: true,
       location: { zipCode: zip, ...location },
     });
-  } else {
-    return NextResponse.json({ success: false, error: 'Zip code not found.' }, { status: 404 });
   }
+
+  // Fallback to a public API if not in our mock database
+  try {
+    const response = await fetch(`https://api.zippopotam.us/us/${zip}`);
+    if (response.ok) {
+      const data = await response.json();
+      location = {
+        city: data.places[0]['place name'],
+        state: data.places[0]['state abbreviation'],
+      };
+      zipCodeCache.set(zip, location);
+      return NextResponse.json({
+        success: true,
+        location: { zipCode: zip, ...location },
+      });
+    }
+  } catch (error) {
+    console.error('Zip code API fallback error:', error);
+    // Proceed to final error response
+  }
+
+  return NextResponse.json({ success: false, error: 'Zip code not found.' }, { status: 404 });
 }

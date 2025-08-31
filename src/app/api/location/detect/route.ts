@@ -2,6 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
   try {
+    const apiKey = process.env.OPENCAGE_API_KEY;
+    if (!apiKey) {
+      console.error('OpenCage API key is not configured.');
+      return NextResponse.json({ error: 'Location service is unavailable.' }, { status: 500 });
+    }
+
     const { latitude, longitude } = await request.json();
 
     if (!latitude || !longitude) {
@@ -13,11 +19,13 @@ export async function POST(request: NextRequest) {
 
     // Use OpenCage Geocoding API to get location details
     const response = await fetch(
-      `https://api.opencagedata.com/geocode/v1/json?q=${latitude}+${longitude}&key=${process.env.OPENCAGE_API_KEY}`
+      `https://api.opencagedata.com/geocode/v1/json?q=${latitude}+${longitude}&key=${apiKey}`
     );
 
     if (!response.ok) {
-      throw new Error('Failed to fetch location data');
+      const errorBody = await response.text();
+      console.error(`OpenCage API error: ${response.status} ${response.statusText}`, errorBody);
+      throw new Error('Failed to fetch location data from provider');
     }
 
     const data = await response.json();
